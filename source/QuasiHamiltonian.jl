@@ -40,6 +40,45 @@ function infAction(a::Real,b::Real,c::Real) #Gives the infinitesimal action for 
     return vec
 end
 
+function preMap(a::Real,b::Real,c::Real,x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real)
+    vecField = (infAction(a,b,c))(x1,x2,x3,y1,y2,y3)
+    wedge = Real[(-1)*vecField[4]   (-1)*vecField[5]    (-1)*vecField[6]    vecField[1] vecField[2] vecField[3]]
+    return wedge
+end
+
+function momMap(a::Real,b::Real,c::Real)
+    grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = preMap(a,b,c,x1,x2,x3,y1,y2,y3)
+    map(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[1]*x1 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[2]*x2 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[1]*x3
+    return map
+end
+
+function momentMapTilda(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real)
+        return (((momMap(0,1,0))(x1,x2,x3,y1,y2,y3))*Real[0 0   1] + ((momMap(0,0,1))(x1,x2,x3,y1,y2,y3))*Real[0    1  0] + (((momMap(1,0,0))(x1,x2,x3,y1,y2,y3)))*Real[1/2 0   0])
+end
+
+function adEigen(A::Array{<:Real})
+    a = A[1]
+    b = A[2]
+    c = A[3]
+    return a^2+b*c
+end
+
+locus = adEigen ∘ momentMapTilda
+
+test(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = x1*y1 + x2*y2 + x3*y3
+
+if locus == test
+    println(true)
+else
+    println(false)
+end
+
+println(test(0,0,0,0,0,0))
+println(locus(0,0,0,0,0,0))
+
+
+
+
 
 
 
