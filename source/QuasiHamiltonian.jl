@@ -2,9 +2,9 @@ using LinearAlgebra
 using ForwardDiff
 
 workingDim = 3 #Dimension of representation
-Eexp(t::Real) = [1 t;0 1] #Base matrices
-Fexp(t::Real) = [1 0;t 1]
-Hexp(t::Real) = [exp(t) 0;0 exp(-t)]
+Eexp(t::Real) = Real[1 t;0 1] #Base matrices
+Fexp(t::Real) = Real[1 0;t 1]
+Hexp(t::Real) = Real[exp(t) 0;0 exp(-t)]
 
 function rep(A::Array{<:Real}) #Gives the representation
     a=A[1,1]
@@ -24,11 +24,23 @@ function getValue(j, k) #Used for composition
 end
 
 function pointTangent(x1::Real, x2::Real, x3::Real, y1::Real, y2::Real, y3::Real, K) #Gives the infinitesimal action for a given base matrix
-    A = Array{Int64}(undef, (2*workingDim,2*workingDim))
+    A = Array{Real}(undef, (2*workingDim,2*workingDim))
         for i = 1:2*workingDim
             for j = 1:2*workingDim
                 g = t -> (getValue(i,j)∘(funcMatrix∘K))(t)
-                h = ForwardDiff.derivative(g, 0)
+                if K == Eexp || K == Fexp
+                    c = g(0)
+                    a = (g(2) - 2g(1) + c)/2
+                    b = g(1) - c - a
+                    h = b
+                elseif K == Hexp
+                    if g(1) != 0
+                        l = log(g(1))
+                    else
+                        l = 0
+                    end
+                    h = l
+                end
                 A[i,j]=h
             end
         end
@@ -48,38 +60,25 @@ end
 
 function momMap(a::Real,b::Real,c::Real)
     grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = preMap(a,b,c,x1,x2,x3,y1,y2,y3)
-    map(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[1]*x1 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[2]*x2 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[1]*x3
+    map(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[1]*x1 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[2]*x2 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[3]*x3
     return map
 end
 
 function momentMapTilda(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real)
-        return (((momMap(0,1,0))(x1,x2,x3,y1,y2,y3))*Real[0 0   1] + ((momMap(0,0,1))(x1,x2,x3,y1,y2,y3))*Real[0    1  0] + (((momMap(1,0,0))(x1,x2,x3,y1,y2,y3)))*Real[1/2 0   0])
+        return (((momMap(0,1,0))(x1,x2,x3,y1,y2,y3))*Real[0 0   1] + ((momMap(0,0,1))(x1,x2,x3,y1,y2,y3))*Real[0    1  0] + (((momMap(1,0,0))(x1,x2,x3,y1,y2,y3)))*Real[(1/2) 0   0])
 end
 
 function adEigen(A::Array{<:Real})
     a = A[1]
     b = A[2]
     c = A[3]
-    return a^2+b*c
+    return (a^2+b*c)
 end
 
 locus = adEigen ∘ momentMapTilda
 
-test(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = x1*y1 + x2*y2 + x3*y3
+test(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (x1*y1)^2 + -2*(x1*y1*y3*x3) + (y3*x3)^2 + ((x2)^2)*y1*y3 + 2*y1*y2*x1*x2 + 2*y2*y3*x2*x3 + 4*((y2)^2)*x1*x3
+test2(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (x1*y1 + x2*y2 + x3*y3)^2
 
-if locus == test
-    println(true)
-else
-    println(false)
-end
-
-println(test(0,0,0,0,0,0))
-println(locus(0,0,0,0,0,0))
-
-
-
-
-
-
-
-
+println(locus(1,1,1,1,3,1))
+println(test(1,1,1,1,3,1))
