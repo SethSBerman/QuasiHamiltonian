@@ -52,33 +52,29 @@ function infAction(a::Real,b::Real,c::Real) #Gives the infinitesimal action for 
     return vec
 end
 
-function preMap(a::Real,b::Real,c::Real,x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real)
+function preMap(a::Real,b::Real,c::Real,x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) #Gives the value of the symplectic form evaluated on the infinitesimal action and a tangent vector
     vecField = (infAction(a,b,c))(x1,x2,x3,y1,y2,y3)
     wedge = Real[(-1)*vecField[4]   (-1)*vecField[5]    (-1)*vecField[6]    vecField[1] vecField[2] vecField[3]]
     return wedge
 end
 
-function momMap(a::Real,b::Real,c::Real)
+function momMap(a::Real,b::Real,c::Real) #Finds the function with differential equal to preMap
     grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = preMap(a,b,c,x1,x2,x3,y1,y2,y3)
     map(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[1]*x1 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[2]*x2 + (grad(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real))[3]*x3
     return map
 end
 
-function momentMapTilda(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real)
+function momentMapTilda(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) #Turns the momemnt map into a function from the cotangent bundle into the dual of the lie algebra
         return (((momMap(0,1,0))(x1,x2,x3,y1,y2,y3))*Real[0 0   1] + ((momMap(0,0,1))(x1,x2,x3,y1,y2,y3))*Real[0    1  0] + (((momMap(1,0,0))(x1,x2,x3,y1,y2,y3)))*Real[(1/2) 0   0])
 end
 
-function adEigen(A::Array{<:Real})
+function adEigen(A::Array{<:Real}) #Finds the bad locus in the dual of the lie algebra
     a = A[1]
     b = A[2]
     c = A[3]
     return (a^2+b*c)
 end
 
-locus = adEigen ∘ momentMapTilda
+locus = adEigen ∘ momentMapTilda #Gives the homogenous polynomial which determines the bad locus in the cotangent bundle
 
 test(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (x1*y1)^2 + -2*(x1*y1*y3*x3) + (y3*x3)^2 + ((x2)^2)*y1*y3 + 2*y1*y2*x1*x2 + 2*y2*y3*x2*x3 + 4*((y2)^2)*x1*x3
-test2(x1::Real,x2::Real,x3::Real,y1::Real,y2::Real,y3::Real) = (x1*y1 + x2*y2 + x3*y3)^2
-
-println(locus(1,1,1,1,3,1))
-println(test(1,1,1,1,3,1))
